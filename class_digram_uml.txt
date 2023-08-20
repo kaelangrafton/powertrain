@@ -1,0 +1,41 @@
+@startuml
+
+class LithiumIonBattery {
+  + mass: float
+  + specific_energy: float
+  + capacity(): float
+  + runtime(motor: ElectricMotor): float
+}
+
+class ElectricMotor {
+  + motor_power: float
+  + rpm: int
+}
+
+class DuctedPropeller {
+  + propeller_diameter: float
+  + hub_diameter: float
+  + air_density: float
+  + diffuser_expansion_ratio: float
+  + correction_factor: float
+  + static_thrust(motor: ElectricMotor): float
+}
+
+class Powertrain {
+  + battery: LithiumIonBattery
+  + motor: ElectricMotor
+  + propeller: DuctedPropeller
+  + capacity_history: list
+  + runtime: float
+  + net_thrust: float
+  + simulate(time_step: float)
+  + get_time_history(): list
+}
+
+LithiumIonBattery --> ElectricMotor: "Uses to calculate\nruntime"
+DuctedPropeller --> ElectricMotor: "Uses to calculate\nstatic thrust"
+Powertrain --> LithiumIonBattery: "Has a"
+Powertrain --> ElectricMotor: "Has a"
+Powertrain --> DuctedPropeller: "Has a"
+
+@enduml
