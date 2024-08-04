@@ -1,62 +1,103 @@
-# main.py
+import numpy as np
 import matplotlib.pyplot as plt
-
-from lithium_ion_battery import LithiumIonBattery
-from inverter import Inverter
-from esc import ESC
+from battery import Battery
 from electric_motor import ElectricMotor
-from ducted_propeller import DuctedPropeller
-from powertrain import Powertrain
+from ducted_fan import DuctedFan
+from serial_hybrid_powertrain import SerialHybridPowertrain
+
+def plot_results(time, states):
+    """
+    Plot the simulation results.
+
+    Args:
+        time (np.array): Array of time points.
+        states (list): List of powertrain states at each time point.
+    """
+    fig, axs = plt.subplots(3, 2, figsize=(15, 15))
+    
+    # Battery plots
+    axs[0, 0].plot(time/60, [s['battery']['voltage'] for s in states])
+    axs[0, 0].set_ylabel('Battery Voltage (V)')
+    axs[0, 1].plot(time/60, [s['battery']['current'] for s in states])
+    axs[0, 1].set_ylabel('Battery Current (A)')
+    
+    # Motor plots
+    axs[1, 0].plot(time/60, [s['motor']['power_output'] for s in states])
+    axs[1, 0].set_ylabel('Motor Power (W)')
+    axs[1, 1].plot(time/60, [s['motor']['efficiency'] for s in states])
+    axs[1, 1].set_ylabel('Motor Efficiency')
+    
+    # Fan plots
+    axs[2, 0].plot(time/60, [s['fan']['rpm'] for s in states])
+    axs[2, 0].set_ylabel('Fan RPM')
+    axs[2, 1].plot(time/60, [s['fan']['thrust'] for s in states])
+    axs[2, 1].set_ylabel('Fan Thrust (N)')
+    
+    for ax in axs.flat:
+        ax.set_xlabel('Time (min)')
+        
+    plt.tight_layout()
+    plt.show()
 
 def main():
-    # Battery Inputs
-    battery_mass = 10  # kg
-    specific_energy = 200  # Wh/kg
-
-    # Motor Inputs
-    motor_power = 20000  # W
-
-    # Propeller Inputs
-    propeller_diameter = .4 # m
-    hub_diameter = 0.1 # m
-    diffuser_expansion_ratio = 0.9
-
-    motor = ElectricMotor(motor_power=motor_power, rpm=12000)
-    battery = LithiumIonBattery(mass=battery_mass, specific_energy=specific_energy)
-    propeller = DuctedPropeller(propeller_diameter=propeller_diameter, hub_diameter=hub_diameter,diffuser_expansion_ratio=diffuser_expansion_ratio, air_density=1.225, correction_factor=0.95)
-
-    # Create a Powertrain object and simulate its operation
-    train = Powertrain(battery, motor, propeller)
-    train.simulate(time_step=0.05)
-  #  print(f"Thrust runtime: {battery.runtime(motor)*60} min")
-   # print(f"Total runtime: {train.runtime} hours")
-
-    # Get data for plotting
-    times = train.get_time_history()
-    capacities = train.capacity_history
-
-    thrust = propeller.static_thrust(motor)
-    print(f"Static Thrust: {thrust/9.91} kgf")
-
-    # Plotting
-    plt.figure(figsize=(10, 6))
-    plt.plot(times, capacities, '-o', label='Battery Capacity')
-    plt.title('Battery Capacity vs Time')
-    plt.xlabel('Time (hours)')
-    plt.ylabel('Battery Capacity (Wh)')
-    plt.legend()
-    plt.grid(True)
-    
-    
-    # Return data for report
-    return {
-        'motor': motor,
-        'battery': battery,
-        'propeller': propeller,
-        'train': train
+    # Battery configuration
+    cell_config = {
+        'Q': 4.2,  # Ah
+        'Vcharge': 4.2,  # V
+        'Vcutoff': 2.5,  # V
+        'Irated': 4.2,  # A
+        'Vlin0': 4.1132,
+        'K': -0.7593,
+        'A': 0.1061,
+        'B': 150,
+        'C': 0.3329,
+        'D': -0.0373,
+        'E': -0.06,
+        'F': 25.1328,
+        'G': 0,
+        'H': 14.9159,
+        'R0': 0.0158,
+        'Rslope': -0.0053,
+        'RA': 0.0800,
+        'RB': 47.6190
     }
+
+    # Motor configuration
+    motor_config = {
+        'max_power': 100000,  # 100 kW
+        'efficiency': 0.95,
+    }
+
+    # Fan configuration
+    fan_config = {
+        'diameter': 1.0,  # m
+        'max_rpm': 5000,
+        'thrust_coefficient': 0.08,
+        'power_coefficient': 0.05,
+    }
+
+    # Create powertrain components
+    battery = Battery(cell_config, num_cells_series=100, num_cells_parallel=10)
+    motor = ElectricMotor(motor_config)
+    fan = DuctedFan(fan_config)
+
+    # Create powertrain
+    powertrain = SerialHybridPowertrain(battery, motor, fan)
+
+    # Simulate a simple mission
+    t_end = 600  # 10 minutes
+    dt = 1  # 1 second time step
+    time = np.arange(0, t_end + dt, dt)
+    
+    # Adjust thrust profile to be more realistic
+    max_thrust = fan.thrust_coefficient * 1.225 * (fan.max_rpm/60)**2 * fan.diameter**4
+    thrust_profile = (np.sin(time / 60) * 0.4 + 0.6) * max_thrust  # Varying between 20% and 100% of max thrust
+
+    # Run simulation
+    states = powertrain.simulate(time, thrust_profile)
+
+    # Plot results
+    plot_results(time, states)
 
 if __name__ == "__main__":
     main()
-    plt.show()
-    
