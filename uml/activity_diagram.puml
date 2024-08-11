@@ -1,0 +1,41 @@
+@startuml
+title Serial Hybrid Powertrain Simulation Activity Diagram
+
+start
+
+:Initialize SerialHybridPowertrain;
+
+:Set simulation parameters
+(time_array, thrust_profile);
+
+:Initialize state list;
+
+while (More time steps?) is (yes)
+  :Calculate time step;
+  :Get thrust demand for current step;
+  
+  :Calculate required fan RPM;
+  
+  :Update DuctedFan;
+  
+  :Calculate power required by fan;
+  
+  :Update ElectricMotor;
+  
+  :Calculate motor input power;
+  
+  :Get battery voltage;
+  
+  :Calculate battery current;
+  
+  :Update Battery;
+  
+  :Get powertrain state;
+  
+  :Add state to state list;
+endwhile (no)
+
+:Return list of states;
+
+stop
+@enduml

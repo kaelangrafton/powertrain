@@ -13,7 +13,7 @@ def plot_results(time, states):
         time (np.array): Array of time points.
         states (list): List of powertrain states at each time point.
     """
-    fig, axs = plt.subplots(3, 2, figsize=(15, 15))
+    fig, axs = plt.subplots(3, 2, figsize=(10, 10))
     
     # Battery plots
     axs[0, 0].plot(time/60, [s['battery']['voltage'] for s in states])

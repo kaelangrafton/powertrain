@@ -1,0 +1,90 @@
+@startuml
+abstract class PowertrainComponent {
+  {abstract} initialize()
+  {abstract} update(t, *args)
+  {abstract} get_output()
+}
+
+abstract class EnergySource {
+  {abstract} get_energy_remaining()
+  {abstract} get_power_available()
+}
+
+abstract class PowerConverter {
+  {abstract} get_efficiency()
+  {abstract} get_power_output()
+}
+
+abstract class Propulsor {
+  {abstract} get_thrust()
+  {abstract} get_power_required()
+}
+
+class Battery {
+  - cell_config: dict
+  - num_cells_series: int
+  - num_cells_parallel: int
+  - Q: float
+  - Vcharge: float
+  - Vcutoff: float
+  - Irated: float
+  - k_Q: float
+  - k_R: float
+  - dod: float
+  + initialize()
+  + update(t, I)
+  + get_output()
+  + get_energy_remaining()
+  + get_power_available()
+  + set_aging_parameters(k_Q, k_R)
+  + get_state()
+}
+
+class ElectricMotor {
+  - max_power: float
+  - efficiency: float
+  - current_power: float
+  + initialize()
+  + update(t, power_demand)
+  + get_output()
+  + get_efficiency()
+  + get_power_output()
+  + get_state()
+}
+
+class DuctedFan {
+  - diameter: float
+  - max_rpm: float
+  - thrust_coefficient: float
+  - power_coefficient: float
+  - current_rpm: float
+  + initialize()
+  + update(t, rpm_demand)
+  + get_output()
+  + get_thrust()
+  + get_power_required()
+  + get_state()
+}
+
+class SerialHybridPowertrain {
+  - battery: Battery
+  - motor: ElectricMotor
+  - fan: DuctedFan
+  + update(t, thrust_demand)
+  + calculate_required_rpm(thrust_demand)
+  + get_state()
+  + simulate(time_array, thrust_profile)
+}
+
+PowertrainComponent <|-- EnergySource
+PowertrainComponent <|-- PowerConverter
+PowertrainComponent <|-- Propulsor
+
+EnergySource <|-- Battery
+PowerConverter <|-- ElectricMotor
+Propulsor <|-- DuctedFan
+
+SerialHybridPowertrain o-- Battery
+SerialHybridPowertrain o-- ElectricMotor
+SerialHybridPowertrain o-- DuctedFan
+@enduml

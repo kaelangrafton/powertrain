@@ -1,0 +1,42 @@
+@startuml
+actor User
+participant "SerialHybridPowertrain" as SHP
+participant "Battery" as B
+participant "ElectricMotor" as EM
+participant "DuctedFan" as DF
+
+User -> SHP: simulate(time_array, thrust_profile)
+activate SHP
+
+loop for each time step
+    SHP -> SHP: update(t, thrust_demand)
+    activate SHP
+    SHP -> SHP: calculate_required_rpm(thrust_demand)
+    SHP -> DF: update(t, required_rpm)
+    activate DF
+    DF -> DF: get_power_required()
+    DF --> SHP: power_required
+    deactivate DF
+    SHP -> EM: update(t, power_required)
+    activate EM
+    EM -> EM: get_power_output()
+    EM -> EM: get_efficiency()
+    EM --> SHP: motor_input_power
+    deactivate EM
+    SHP -> B: get_output()
+    activate B
+    B --> SHP: battery_voltage
+    deactivate B
+    SHP -> SHP: calculate battery_current
+    SHP -> B: update(t, battery_current)
+    activate B
+    B --> SHP: updated
+    deactivate B
+    SHP -> SHP: get_state()
+    SHP --> User: state
+    deactivate SHP
+end
+
+SHP --> User: states
+deactivate SHP
+@enduml
